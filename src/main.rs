@@ -1,6 +1,9 @@
 use inputbot::{KeybdKey::*, MouseButton, *};
 use std::{
-    sync::{Arc, atomic::{AtomicBool, Ordering}},
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
     thread::sleep,
     time::Duration,
 };
