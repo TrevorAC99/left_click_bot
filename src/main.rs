@@ -16,7 +16,6 @@ fn main() {
         let continue_clicking = continue_clicking.clone();
         let already_clicking = std::sync::Arc::new(AtomicBool::new(false));
         DeleteKey.bind(move || {
-
             if already_clicking.load(Ordering::SeqCst) {
                 println!("Can't start a click loop since one is already going.");
                 return;
@@ -31,19 +30,15 @@ fn main() {
                     println!("Stopped click loop.");
                     break;
                 }
-    
-                // MouseButton::LeftButton.press();
-                // MouseButton::LeftButton.release();
 
                 MouseButton::LeftButton.click();
-    
+
                 sleep(DURATION_BETWEEN_CLICKS);
             }
         });
     }
 
     {
-
         let continue_clicking = continue_clicking.clone();
         MouseButton::RightButton.bind(move || {
             let prev = continue_clicking.fetch_xor(true, Ordering::SeqCst);
