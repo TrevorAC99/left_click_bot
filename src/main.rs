@@ -1,6 +1,6 @@
 use inputbot::{KeybdKey::*, MouseButton, *};
 use std::{
-    sync::atomic::{AtomicBool, Ordering},
+    sync::{Arc, atomic::{AtomicBool, Ordering}},
     thread::sleep,
     time::Duration,
 };
@@ -9,12 +9,15 @@ const SECONDS_BETWEEN_CLICKS: u64 = 6;
 const DURATION_BETWEEN_CLICKS: Duration = Duration::from_secs(SECONDS_BETWEEN_CLICKS);
 
 fn main() {
-    println!("Starting up left_click_bot.\nPress Delete to start the click loop.\nRight click to toggle continue_clicking.\nPress Backspace to shut down.");
-    let continue_clicking = std::sync::Arc::new(AtomicBool::new(true));
+    println!("Starting up left_click_bot.");
+    println!("Press Delete to start the click loop.");
+    println!("Right click to toggle continue_clicking.");
+    println!("Press Backspace to shut down.");
+    let continue_clicking = Arc::new(AtomicBool::new(true));
 
     {
         let continue_clicking = continue_clicking.clone();
-        let already_clicking = std::sync::Arc::new(AtomicBool::new(false));
+        let already_clicking = Arc::new(AtomicBool::new(false));
         DeleteKey.bind(move || {
             if already_clicking.load(Ordering::SeqCst) {
                 println!("Can't start a click loop since one is already going.");
