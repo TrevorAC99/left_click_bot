@@ -27,6 +27,8 @@ fn main() {
                 println!("Starting a click loop.");
             }
             loop {
+                MouseButton::LeftButton.click();
+
                 for _ in 0..SECONDS_BETWEEN_CLICKS {
                     if !continue_clicking.load(Ordering::SeqCst) {
                         already_clicking.store(false, Ordering::SeqCst);
@@ -37,8 +39,6 @@ fn main() {
 
                     sleep(SECOND);
                 }
-
-                MouseButton::LeftButton.click();
             }
         });
     }
