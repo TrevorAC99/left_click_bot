@@ -1,8 +1,10 @@
 use inputbot::{KeybdKey::*, MouseButton, *};
-use std::{io::{Write, stdout}, sync::{
-        atomic::{AtomicBool, Ordering},
-        Arc,
-    }, thread::sleep, time::Duration};
+use std::{
+    io::{stdout, Write},
+    sync::{Arc, Mutex},
+    thread::sleep,
+    time::Duration,
+};
 
 const SECONDS_BETWEEN_CLICKS: u64 = 6;
 const SECOND: Duration = Duration::from_secs(1);
@@ -12,29 +14,35 @@ fn main() {
     println!("Press Delete to start the click loop.");
     println!("Right click to toggle continue_clicking.");
     println!("Press Backspace to shut down.");
-    let continue_clicking = Arc::new(AtomicBool::new(true));
+
+    let state = Arc::new(Mutex::new(State::new()));
 
     {
-        let continue_clicking = continue_clicking.clone();
-        let already_clicking = Arc::new(AtomicBool::new(false));
+        let state = state.clone();
 
         DeleteKey.bind(move || {
-            if already_clicking.load(Ordering::SeqCst) {
-                println!("Can't start a click loop since one is already going.");
-                return;
-            } else {
-                already_clicking.store(true, Ordering::SeqCst);
-                println!("Starting a click loop.");
+            {
+                let mut state = state.lock().unwrap();
+                if state.already_clicking {
+                    println!("Can't start a click loop since one is already going.");
+                    return;
+                } else {
+                    state.already_clicking = true;
+                    println!("Starting a click loop.");
+                }
             }
             loop {
                 MouseButton::LeftButton.click();
 
                 for _ in 0..SECONDS_BETWEEN_CLICKS {
-                    if !continue_clicking.load(Ordering::SeqCst) {
-                        already_clicking.store(false, Ordering::SeqCst);
-                        continue_clicking.store(true, Ordering::SeqCst);
-                        println!("Stopped click loop.");
-                        return;
+                    {
+                        let mut state = state.lock().unwrap();
+                        if !state.continue_clicking {
+                            state.already_clicking = false;
+                            state.continue_clicking = true;
+                            println!("Stopped click loop.");
+                            return;
+                        }
                     }
 
                     sleep(SECOND);
@@ -44,11 +52,14 @@ fn main() {
     }
 
     {
-        let continue_clicking = continue_clicking.clone();
+        let state = state.clone();
         MouseButton::RightButton.bind(move || {
-            continue_clicking.fetch_xor(true, Ordering::SeqCst);
-            print!("Stopping click loop...");
-            stdout().flush().unwrap();
+            let mut state = state.lock().unwrap();
+            if state.already_clicking {
+                state.continue_clicking = false;
+                print!("Stopping click loop...");
+                stdout().flush().unwrap();
+            }
         });
     }
 
@@ -58,6 +69,20 @@ fn main() {
     });
 
     handle_input_events();
+}
+
+struct State {
+    continue_clicking: bool,
+    already_clicking: bool,
+}
+
+impl State {
+    fn new() -> Self {
+        State {
+            continue_clicking: true,
+            already_clicking: false,
+        }
+    }
 }
 
 trait Clickable {
