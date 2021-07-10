@@ -9,13 +9,17 @@ use std::{
     time::Duration,
 };
 
-const SECONDS_BETWEEN_CLICKS: u64 = 3;
-const SECOND: Duration = Duration::from_secs(1);
+// const SECONDS_BETWEEN_CLICKS: u64 = 3;
+// const SECOND: Duration = Duration::from_secs(1);
+
+
+const QUARTER_SECONDS_BETWEEN_CLICKS: u64 = 12;
+const QUARTER_SECOND: Duration = Duration::from_millis(250);
 
 fn main() {
     println!(include_str!("startup_message.txt"));
 
-    let state = Arc::new(Mutex::new(State::with_interval(SECONDS_BETWEEN_CLICKS)));
+    let state = Arc::new(Mutex::new(State::with_quarter_seconds_between_clicks(QUARTER_SECONDS_BETWEEN_CLICKS)));
 
     {
         let state = state.clone();
@@ -36,7 +40,7 @@ fn main() {
                 let seconds_between_clicks: u64;
                 {
                     let mut state = state.lock().unwrap();
-                    seconds_between_clicks = state.seconds_between_clicks;
+                    seconds_between_clicks = state.quarter_seconds_between_clicks;
                     if !state.continue_clicking {
                         state.already_clicking = false;
                         state.continue_clicking = true;
@@ -58,7 +62,7 @@ fn main() {
                         }
                     }
     
-                    sleep(SECOND);
+                    sleep(QUARTER_SECOND);
                 }
             }
         });
@@ -69,11 +73,11 @@ fn main() {
 
         InsertKey.bind(move || {
             let mut state = state.lock().unwrap();
-            if state.seconds_between_clicks < u64::MAX {
-                state.seconds_between_clicks += 1;
-            }
+            if state.quarter_seconds_between_clicks < u64::MAX {
+                state.quarter_seconds_between_clicks += 1;
 
-            println!("Seconds between clicks: {}", state.seconds_between_clicks);
+                println!("Seconds between clicks: {}", state.quarter_seconds_between_clicks as f64 / 4.0);
+            }
         });
     }
 
@@ -82,11 +86,11 @@ fn main() {
 
         DeleteKey.bind(move || {
             let mut state = state.lock().unwrap();
-            if state.seconds_between_clicks > u64::MIN {
-                state.seconds_between_clicks -= 1;
-            }
+            if state.quarter_seconds_between_clicks > 1 {
+                state.quarter_seconds_between_clicks -= 1;
 
-            println!("Seconds between clicks: {}", state.seconds_between_clicks);
+                println!("Seconds between clicks: {}", state.quarter_seconds_between_clicks as f64 / 4.0);
+            }
         });
     }
 
@@ -101,15 +105,15 @@ fn main() {
 struct State {
     continue_clicking: bool,
     already_clicking: bool,
-    seconds_between_clicks: u64,
+    quarter_seconds_between_clicks: u64,
 }
 
 impl State {
-    fn with_interval(interval: u64) -> Self {
+    fn with_quarter_seconds_between_clicks(interval: u64) -> Self {
         State {
             continue_clicking: true,
             already_clicking: false,
-            seconds_between_clicks: interval,
+            quarter_seconds_between_clicks: interval,
         }
     }
 }
